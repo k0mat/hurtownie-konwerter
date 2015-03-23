@@ -6,7 +6,7 @@ var acceptedExtension = ["csv", "xls", "xlsx"];
 var extension = "";
 
 
-/* GET new page*/
+/* GET root page*/
 router.get('/', function(req, res) {
 	render(res, req.db, {title : 'Konwerter'})
 });
@@ -14,6 +14,7 @@ router.get('/', function(req, res) {
 router.post('/', function(req, res, next) {
 	
 	if (req.busboy) {
+		//sciagnia pliku przez biblioteke busboy
 		req.pipe(req.busboy);
 		var fileContent = "";
 		req.busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
@@ -26,12 +27,15 @@ router.post('/', function(req, res, next) {
 			}
 			
 			file.setEncoding('utf8');
+			
+			//wczytuje plik
 			file.on('readable', function() {
 				var chunk;
 				while (null !== (chunk = file.read())) {
 					fileContent = fileContent.concat(chunk);
 				}
 			});
+			//po zakonczeniu wczytywania parsuje
 			file.on('end', function() {
 				var parsed;
 				if(extension === "csv")
@@ -55,10 +59,6 @@ router.post('/', function(req, res, next) {
 					}
 				});
 			});
-		});
-		req.busboy.on('finish', function()
-		{
-
 		});
 	} 
 	
@@ -118,25 +118,6 @@ function parseCSV(fileContent){
 		
 	}
 	return csvObject;
-}
-
-function insertIntoDB(object, db, res){
-	// Set our collection
-    var collection = db.get('filecollection');
-	
-    // Submit to the DB
-    collection.insert(object, function (err, doc) {
-        if (err) {
-            // If it failed, return error
-            res.send("There was a problem adding the information to the database.");
-        }
-        else {
-            // If it worked, set the header so the address bar doesn't still say /adduser
-            res.location("userlist");
-            // And forward to success page
-            res.redirect("userlist");
-        }
-    });
 }
 
 function render(res, db, arg){
