@@ -1,0 +1,14 @@
+extends layout
+
+block content
+	#page-wrap
+		#title
+			h1= title
+		#container
+			if fileDetails
+				include ./details.jade
+			else if notFound
+				include ./nofile.jade
+			else
+				include ./new.jade
+			include ./recent.jade

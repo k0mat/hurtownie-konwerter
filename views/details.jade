@@ -1,0 +1,8 @@
+#upload-form
+	p Nazwa pliku: 
+		= file.name
+	p Format pliku: 
+		= file.filetype
+	p Ściągnij:
+	li 
+		a(href="/file/#{file._id}/json/#{file.name}.json") JSON

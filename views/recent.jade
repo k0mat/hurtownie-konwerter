@@ -1,0 +1,5 @@
+#recent
+	ul Ostatnie:
+		each file, i in recent
+			li
+				a(href="/file/#{file._id}")= file.name

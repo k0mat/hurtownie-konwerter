@@ -1,0 +1,7 @@
+#upload-form
+	p Wybierz plik do przesłania
+	form#formAddUser(name="new",method="post",enctype="multipart/form-data",action="/")
+		input#inputFile(type="file", placeholder="file", name="filename")
+		button#btnSubmit(type="submit") Prześlij
+	#message.error
+		p #{message}
