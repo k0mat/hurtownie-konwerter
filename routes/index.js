@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var ObjectID = require('mongodb').ObjectID;
+var js2xmlparser = require("js2xmlparser");
 
 var acceptedExtension = ["csv", "xls", "xlsx"];
 var extension = "";
@@ -84,6 +85,7 @@ router.get('/file/:id', function(req, res) {
     });
 });
 
+//JSON
 router.get('/file/:id/json/:file', function (req, res, next) {
 	var id = req.params.id;
 	
@@ -97,7 +99,83 @@ router.get('/file/:id/json/:file', function (req, res, next) {
 	collection.findOne({"_id": id}, function(err, doc) {
         if (doc){
 			delete doc._id;
+			res.type('application/json'); 
             res.send(doc);
+        } else {
+            res.status(404).send("File not found.");
+        }
+    });
+
+});
+
+
+//XML
+router.get('/file/:id/xml/:file', function (req, res, next) {
+	var id = req.params.id;
+	
+	if(id.length != 24){
+		res.status(404).send("File not found.");
+		return;
+	}
+	
+	var collection = req.db.get('filecollection');
+	
+	collection.findOne({"_id": id}, function(err, doc) {
+        if (doc){
+			delete doc._id;
+			res.type('application/xml'); 
+            res.send(js2xmlparser("file",doc));
+        } else {
+            res.status(404).send("File not found.");
+        }
+    });
+
+});
+
+//SQL
+router.get('/file/:id/sql/:file', function (req, res, next) {
+	var id = req.params.id;
+	
+	if(id.length != 24){
+		res.status(404).send("File not found.");
+		return;
+	}
+	
+	var collection = req.db.get('filecollection');
+	
+	collection.findOne({"_id": id}, function(err, doc) {
+        if (doc){
+			delete doc._id;
+			var sql = "";
+			var i, j;
+			for(i = 0; i < doc.content.length; ++i){
+				var line = doc.content[i];
+				var insert = "";
+				var keys = [];
+				var values = [];
+				for (var k in line){
+					if (typeof line[k] !== 'function') {
+						keys.push(k);
+						values.push(line[k]);
+					}
+				}
+				insert += "INSERT INTO table ("
+				var k = JSON.stringify(keys).replace("[","").replace("]", "");
+				while(k.indexOf('"') != -1){
+					k = k.replace('"', "");
+				}
+				insert += k;
+				insert += ") VALUES (";
+				var v = JSON.stringify(values).replace("[","").replace("]", "");
+				while(v.indexOf('"') != -1){
+					v = v.replace('"', "'");
+				}
+				insert += v;
+				insert += ");\n";
+				sql += insert;
+			}
+			res.type('application/sql'); 
+            res.send(sql);
         } else {
             res.status(404).send("File not found.");
         }

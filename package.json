@@ -16,6 +16,6 @@
 	"mongodb": "*",
     "monk": "*",
 	"connect-busboy" : "*",
-	"q" : "*"
+	"js2xmlparser" : "*"
   }
 }
