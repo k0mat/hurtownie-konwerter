@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 var ObjectID = require('mongodb').ObjectID;
 var js2xmlparser = require("js2xmlparser");
+var XLS = require('xlsjs');
+var XLSX = require('xlsx')
 
 var acceptedExtension = ["csv", "xls", "xlsx"];
 var extension = "";
@@ -17,7 +19,7 @@ router.post('/', function(req, res, next) {
 	if (req.busboy) {
 		//sciagnia pliku przez biblioteke busboy
 		req.pipe(req.busboy);
-		var fileContent = "";
+		var fileContent;
 		req.busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
 			var nameArr = filename.split('.');
 			extension = nameArr[nameArr.length-1];
@@ -27,13 +29,13 @@ router.post('/', function(req, res, next) {
 				render(res, req.db, {title : 'Konwerter', message : 'File type ' + extension + ' is not supported'});
 			}
 			
-			file.setEncoding('utf8');
-			
 			//wczytuje plik
-			file.on('readable', function() {
-				var chunk;
-				while (null !== (chunk = file.read())) {
-					fileContent = fileContent.concat(chunk);
+			file.on('data', function(chunk) {
+				console.log('got %d bytes of data', chunk.length);
+				if(fileContent){
+					fileContent = Buffer.concat([fileContent, chunk]);
+				} else {
+					fileContent = new Buffer(chunk);
 				}
 			});
 			//po zakonczeniu wczytywania parsuje
@@ -41,7 +43,11 @@ router.post('/', function(req, res, next) {
 				var parsed;
 				if(extension === "csv")
 				{
-					parsed = parseCSV(fileContent);
+					parsed = parseCSV(fileContent.toString());
+				} else if( extension === "xls" ){
+					parsed = parseXLS(fileContent.toString('binary'));
+				} else if( extension === "xlsx" ){
+					parsed = parseXLSX(fileContent.toString('binary'));
 				}
 				var dbEntry = {name : nameArr[0], filetype : extension, content : parsed};
 				
@@ -195,6 +201,26 @@ function parseCSV(fileContent){
 		}
 		
 	}
+	return csvObject;
+}
+
+function parseXLS(fileContent){
+	var csvObject = [];
+	var workbook = XLS.read(fileContent, {type: 'binary'});
+	var sheet = workbook.SheetNames[0];
+	csvObject = XLS.utils.sheet_to_json(workbook.Sheets[sheet]);
+	console.log(csvObject);
+	
+	return csvObject;
+}
+
+function parseXLSX(fileContent){
+	var csvObject = [];
+	var workbook = XLSX.read(fileContent, {type: 'binary'});
+	var sheet = workbook.SheetNames[0];
+	csvObject = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
+	console.log(csvObject);
+	
 	return csvObject;
 }
 
